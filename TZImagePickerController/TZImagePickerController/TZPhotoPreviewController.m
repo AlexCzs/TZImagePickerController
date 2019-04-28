@@ -13,6 +13,14 @@
 #import "TZImagePickerController.h"
 #import "TZImageManager.h"
 #import "TZImageCropManager.h"
+#import "TZAssetCell.h"
+
+// modified by Novia
+#if __has_include("NBFoundation-Swift.h")
+#import "NBFoundation-Swift.h"
+#else
+#import <NBFoundation/NBFoundation-Swift.h>
+#endif
 
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
@@ -35,6 +43,11 @@
     CGFloat _offsetItemCount;
     
     BOOL _didSetIsSelectOriginalPhoto;
+    
+    // modified by Novia
+    UIScrollView *_scrollView;
+    UICollectionView *_bottomCollection;
+    UICollectionViewFlowLayout *_bottomLayout;
 }
 @property (nonatomic, assign) BOOL isHideNaviBar;
 @property (nonatomic, strong) UIView *cropBgView;
@@ -57,6 +70,8 @@
         self.models = [NSMutableArray arrayWithArray:_tzImagePickerVc.selectedModels];
         _assetsTemp = [NSMutableArray arrayWithArray:_tzImagePickerVc.selectedAssets];
     }
+    self.selectedModels = [NSMutableArray arrayWithArray:_tzImagePickerVc.selectedModels];
+    
     [self configCollectionView];
     [self configCustomNaviBar];
     [self configBottomToolBar];
@@ -92,6 +107,16 @@
         [UIApplication sharedApplication].statusBarHidden = NO;
     }
     [TZImageManager manager].shouldFixOrientation = NO;
+    
+    /********** modified by Novia ************/
+    // 退出预览，隐藏uploadCenterVC的nav和bottom
+    if (_isNeedHiddend) {
+        if (tzImagePickerVc.previewHiddendSettingBlock) {
+            tzImagePickerVc.previewHiddendSettingBlock(NO);
+        }
+    }
+    /****************** end ******************/
+    
 }
 
 - (BOOL)prefersStatusBarHidden {
@@ -102,7 +127,7 @@
     TZImagePickerController *tzImagePickerVc = (TZImagePickerController *)self.navigationController;
     
     _naviBar = [[UIView alloc] initWithFrame:CGRectZero];
-    _naviBar.backgroundColor = [UIColor colorWithRed:(34/255.0) green:(34/255.0)  blue:(34/255.0) alpha:0.7];
+//    _naviBar.backgroundColor = [UIColor colorWithRed:(34/255.0) green:(34/255.0)  blue:(34/255.0) alpha:0.7];
     
     _backButton = [[UIButton alloc] initWithFrame:CGRectZero];
     [_backButton setImage:[UIImage tz_imageNamedFromMyBundle:@"navi_back"] forState:UIControlStateNormal];
@@ -123,11 +148,69 @@
     _indexLabel.textColor = [UIColor whiteColor];
     _indexLabel.textAlignment = NSTextAlignmentCenter;
     
-    [_naviBar addSubview:_selectButton];
-    [_naviBar addSubview:_indexLabel];
-    [_naviBar addSubview:_backButton];
-    [self.view addSubview:_naviBar];
+    /********************* modified by Novia ***********************/
+    if (tzImagePickerVc.isUploadDynamic) {
+        [self navCoverLayer];
+        //[_naviBar addSubview:_selectButton];
+        //[_naviBar addSubview:_indexLabel];
+        [_naviBar addSubview:_backButton];
+        [self.view addSubview:_naviBar];
+        [_naviBar bringSubviewToFront:_backButton];
+        [self.view addSubview:_selectButton];
+        [self.view addSubview:_indexLabel];
+        
+    }else {
+        [_naviBar addSubview:_selectButton];
+        [_naviBar addSubview:_indexLabel];
+        [_naviBar addSubview:_backButton];
+        [self.view addSubview:_naviBar];
+    }
 }
+
+/********************* modified by Novia ***********************/
+- (void)navCoverLayer {
+    CAGradientLayer *gl = [CAGradientLayer layer];
+    CGFloat statusBarHeight = [TZCommonTools tz_statusBarHeight];
+    TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+    CGFloat naviBarHeight = statusBarHeight + _tzImagePickerVc.navigationBar.tz_height;
+    gl.frame = CGRectMake(0,0,_tzImagePickerVc.view.bounds.size.width,naviBarHeight);
+    gl.startPoint = CGPointMake(0.5, 1);
+    gl.endPoint = CGPointMake(0.5, 0);
+    
+    gl.colors = @[(__bridge id)[[UIColor blackColor] colorWithAlphaComponent:0].CGColor, (__bridge id)[[UIColor blackColor] colorWithAlphaComponent:0.9].CGColor];
+    gl.locations = @[@(0), @(1.0f)];
+    [_naviBar.layer insertSublayer:gl atIndex:0];
+}
+
+- (void)bottomCoverLayer {
+    CAGradientLayer *gl = [CAGradientLayer layer];
+    //    gl.frame = _toolBar.bounds;
+    ////    gl.startPoint = CGPointMake(0.5, 0);
+    ////    gl.endPoint = CGPointMake(0.5, 1);
+    
+    CGFloat toolBarHeight = [TZCommonTools tz_isIPhoneX] ? 80 + (83 - 49) : 100;
+    CGFloat toolBarTop = self.view.tz_height - toolBarHeight;
+    //    gl.frame = CGRectMake(0, toolBarTop, self.view.tz_width, toolBarHeight);
+    //
+    //    gl.startPoint = CGPointMake(0.5, 0);
+    //    gl.endPoint = CGPointMake(0.5, 1);
+    //    gl.colors = @[(__bridge id)[UIColor colorWithRed:0/255.0 green:0/255.0 blue:0/255.0 alpha:0.0].CGColor, (__bridge id)[UIColor colorWithRed:0/255.0 green:0/255.0 blue:0/255.0 alpha:0.7].CGColor];
+    //    //gl.colors = @[(__bridge id)[UIColor black:0].CGColor, (__bridge id)[UIColor black:0.9].CGColor];
+    //    gl.locations = @[@(0), @(1.0f)];
+    //    [_toolBar.layer insertSublayer:gl atIndex:0];
+    
+    CGFloat statusBarHeight = [TZCommonTools tz_statusBarHeight];
+    TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+    gl.frame = CGRectMake(0, toolBarTop, self.view.tz_width, toolBarHeight);
+    
+    gl.startPoint = CGPointMake(0.5, 1);
+    gl.endPoint = CGPointMake(0.5, 0);
+    gl.colors = @[(__bridge id)[[UIColor blackColor] colorWithAlphaComponent:0].CGColor, (__bridge id)[[UIColor blackColor] colorWithAlphaComponent:0.9].CGColor];
+    gl.locations = @[@(0), @(1.0f)];
+    [_toolBar.layer insertSublayer:gl atIndex:0];
+}
+
+/*********************** end ******************************/
 
 - (void)configBottomToolBar {
     _toolBar = [[UIView alloc] initWithFrame:CGRectZero];
@@ -176,16 +259,53 @@
     _numberLabel.hidden = _tzImagePickerVc.selectedModels.count <= 0;
     _numberLabel.backgroundColor = [UIColor clearColor];
     
-    [_originalPhotoButton addSubview:_originalPhotoLabel];
-    [_toolBar addSubview:_doneButton];
-    [_toolBar addSubview:_originalPhotoButton];
-    [_toolBar addSubview:_numberImageView];
-    [_toolBar addSubview:_numberLabel];
-    [self.view addSubview:_toolBar];
+    // modified by Novia
+    if (_tzImagePickerVc.isUploadDynamic) {
+        [self addBottomCollectionView];
+        
+        if (self.selectedModels.count == 0) {
+            [_doneButton setEnabled: NO];
+        }else {
+            [_doneButton setEnabled: YES];
+        }
+        [_doneButton setTitle:@"nb_next".fo forState:UIControlStateNormal];
+        [_doneButton setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
+        _doneButton.backgroundColor = UIColor.whiteColor;
+        _doneButton.titleLabel.font = [UIFont systemFontOfSize:12];
+        _doneButton.layer.cornerRadius = 12;
+        _doneButton.clipsToBounds = YES;
+        
+        [self.view addSubview:_toolBar];
+        [_naviBar addSubview:_doneButton];
+        [self bottomCoverLayer];
+    } else {
+        [_originalPhotoButton addSubview:_originalPhotoLabel];
+        [_toolBar addSubview:_doneButton];
+        [_toolBar addSubview:_originalPhotoButton];
+        [_toolBar addSubview:_numberImageView];
+        [_toolBar addSubview:_numberLabel];
+        [self.view addSubview:_toolBar];
+    }
     
     if (_tzImagePickerVc.photoPreviewPageUIConfigBlock) {
         _tzImagePickerVc.photoPreviewPageUIConfigBlock(_collectionView, _naviBar, _backButton, _selectButton, _indexLabel, _toolBar, _originalPhotoButton, _originalPhotoLabel, _doneButton, _numberImageView, _numberLabel);
     }
+}
+
+// modified by Novia
+- (void)addBottomCollectionView {
+    _bottomLayout = [[UICollectionViewFlowLayout alloc] init];
+    _bottomLayout.itemSize = CGSizeMake(58, 58);
+    _bottomLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
+    _bottomCollection = [[UICollectionView alloc] initWithFrame:CGRectMake(18, 18, self.view.tz_width-36, 60) collectionViewLayout:_bottomLayout];
+    _bottomCollection.backgroundColor = [UIColor clearColor];
+    _bottomCollection.dataSource = self;
+    _bottomCollection.delegate = self;
+    _bottomCollection.showsHorizontalScrollIndicator = NO;
+    _bottomCollection.contentOffset = CGPointMake(0, 0);
+    [_bottomCollection registerClass:[PreviewBottomCollectionCell class] forCellWithReuseIdentifier:@"PreviewBottomCollectionCell"];
+    _bottomCollection.contentSize = CGSizeMake(self.selectedModels.count * (56 + 14), 60);
+    [_toolBar addSubview:_bottomCollection];
 }
 
 - (void)configCollectionView {
@@ -279,6 +399,23 @@
     _numberImageView.frame = CGRectMake(_doneButton.tz_left - 24 - 5, 10, 24, 24);
     _numberLabel.frame = _numberImageView.frame;
     
+    if (_tzImagePickerVc.isUploadDynamic) {
+        _bottomCollection.contentSize = CGSizeMake(self.selectedModels.count * (56 + 14), 60);
+        [_bottomCollection setCollectionViewLayout:_bottomLayout];
+        
+        _backButton.frame = CGRectMake(10, 15 + statusBarHeightInterval, 44, 44);
+        _doneButton.frame = CGRectMake(self.view.tz_width - _doneButton.tz_width - 12-20, 15+statusBarHeightInterval, _doneButton.tz_width+20, 24);
+        _doneButton.tz_centerY = _backButton.tz_centerY;
+        _selectButton.frame = CGRectMake(self.view.tz_width - 56, naviBarHeight+17, 44, 44);
+        _indexLabel.frame = _selectButton.frame;
+        toolBarHeight = [TZCommonTools tz_isIPhoneX] ? 80 + (83 - 49) : 100;
+        toolBarTop = self.view.tz_height - toolBarHeight;
+        _toolBar.frame = CGRectMake(0, toolBarTop, self.view.tz_width, toolBarHeight);
+        [self.view bringSubviewToFront:_selectButton];
+        [self.view bringSubviewToFront:_indexLabel];
+        
+    }
+    
     [self configCropView];
     
     if (_tzImagePickerVc.photoPreviewPageDidLayoutSubviewsBlock) {
@@ -299,8 +436,11 @@
     TZAssetModel *model = _models[self.currentIndex];
     if (!selectButton.isSelected) {
         // 1. select:check if over the maxImagesCount / 选择照片,检查是否超过了最大个数的限制
+        NSString *title = @"照片数量已达上限";
         if (_tzImagePickerVc.selectedModels.count >= _tzImagePickerVc.maxImagesCount) {
-            NSString *title = [NSString stringWithFormat:[NSBundle tz_localizedStringForKey:@"Select a maximum of %zd photos"], _tzImagePickerVc.maxImagesCount];
+            if ([NSString respondsToSelector:NSSelectorFromString(@"fo")]) {
+                title = @"nb_fans_select_max_photo_tip".fo;
+            }
             [_tzImagePickerVc showAlertWithTitle:title];
             return;
             // 2. if not over the maxImagesCount / 如果没有超过最大个数限制
@@ -351,6 +491,17 @@
         [UIView showOscillatoryAnimationWithLayer:selectButton.imageView.layer type:TZOscillatoryAnimationToBigger];
     }
     [UIView showOscillatoryAnimationWithLayer:_numberImageView.layer type:TZOscillatoryAnimationToSmaller];
+    // modified by Novia
+    self.selectedModels = [NSMutableArray arrayWithArray:_tzImagePickerVc.selectedModels];
+    if (!_bottomCollection) {
+        [self addBottomCollectionView];
+    }
+    if (self.selectedModels.count == 0) {
+        [_doneButton setEnabled: NO];
+    }else {
+        [_doneButton setEnabled: YES];
+    }
+    [_bottomCollection reloadData];
 }
 
 - (void)backButtonClick {
@@ -431,81 +582,152 @@
 #pragma mark - UIScrollViewDelegate
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    CGFloat offSetWidth = scrollView.contentOffset.x;
-    offSetWidth = offSetWidth +  ((self.view.tz_width + 20) * 0.5);
-    
-    NSInteger currentIndex = offSetWidth / (self.view.tz_width + 20);
-    if (currentIndex < _models.count && _currentIndex != currentIndex) {
-        _currentIndex = currentIndex;
-        [self refreshNaviBarAndBottomBarState];
+    // modified by Novia
+    if (scrollView == _collectionView) {
+        CGFloat offSetWidth = scrollView.contentOffset.x;
+        offSetWidth = offSetWidth +  ((self.view.tz_width + 20) * 0.5);
+        
+        NSInteger currentIndex = offSetWidth / (self.view.tz_width + 20);
+        if (currentIndex < _models.count && _currentIndex != currentIndex) {
+            _currentIndex = currentIndex;
+            [self refreshNaviBarAndBottomBarState];
+        }
+        
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"photoPreviewCollectionViewDidScroll" object:nil];
     }
-    
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"photoPreviewCollectionViewDidScroll" object:nil];
 }
 
 #pragma mark - UICollectionViewDataSource && Delegate
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return _models.count;
+    // modified by Novia
+    if (collectionView == _bottomCollection) {
+        return self.selectedModels.count;
+    }else {
+        return _models.count;
+    }
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
+//    TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+//    TZAssetModel *model = _models[indexPath.item];
+//
+//    TZAssetPreviewCell *cell;
+//    __weak typeof(self) weakSelf = self;
+//    if (_tzImagePickerVc.allowPickingMultipleVideo && model.type == TZAssetModelMediaTypeVideo) {
+//        cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZVideoPreviewCell" forIndexPath:indexPath];
+//    } else if (_tzImagePickerVc.allowPickingMultipleVideo && model.type == TZAssetModelMediaTypePhotoGif && _tzImagePickerVc.allowPickingGif) {
+//        cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZGifPreviewCell" forIndexPath:indexPath];
+//    } else {
+//        cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZPhotoPreviewCell" forIndexPath:indexPath];
+//        TZPhotoPreviewCell *photoPreviewCell = (TZPhotoPreviewCell *)cell;
+//        photoPreviewCell.cropRect = _tzImagePickerVc.cropRect;
+//        photoPreviewCell.allowCrop = _tzImagePickerVc.allowCrop;
+//        __weak typeof(_tzImagePickerVc) weakTzImagePickerVc = _tzImagePickerVc;
+//        __weak typeof(_collectionView) weakCollectionView = _collectionView;
+//        __weak typeof(photoPreviewCell) weakCell = photoPreviewCell;
+//        [photoPreviewCell setImageProgressUpdateBlock:^(double progress) {
+//            __strong typeof(weakSelf) strongSelf = weakSelf;
+//            __strong typeof(weakTzImagePickerVc) strongTzImagePickerVc = weakTzImagePickerVc;
+//            __strong typeof(weakCollectionView) strongCollectionView = weakCollectionView;
+//            __strong typeof(weakCell) strongCell = weakCell;
+//            strongSelf.progress = progress;
+//            if (progress >= 1) {
+//                if (strongSelf.isSelectOriginalPhoto) [strongSelf showPhotoBytes];
+//                if (strongSelf.alertView && [strongCollectionView.visibleCells containsObject:strongCell]) {
+//                    [strongTzImagePickerVc hideAlertView:strongSelf.alertView];
+//                    strongSelf.alertView = nil;
+//                    [strongSelf doneButtonClick];
+//                }
+//            }
+//        }];
+//    }
+//
+//    cell.model = model;
+//    [cell setSingleTapGestureBlock:^{
+//        __strong typeof(weakSelf) strongSelf = weakSelf;
+//        [strongSelf didTapPreviewCell];
+//    }];
+//    return cell;
     TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
-    TZAssetModel *model = _models[indexPath.item];
-    
-    TZAssetPreviewCell *cell;
-    __weak typeof(self) weakSelf = self;
-    if (_tzImagePickerVc.allowPickingMultipleVideo && model.type == TZAssetModelMediaTypeVideo) {
-        cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZVideoPreviewCell" forIndexPath:indexPath];
-    } else if (_tzImagePickerVc.allowPickingMultipleVideo && model.type == TZAssetModelMediaTypePhotoGif && _tzImagePickerVc.allowPickingGif) {
-        cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZGifPreviewCell" forIndexPath:indexPath];
-    } else {
-        cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZPhotoPreviewCell" forIndexPath:indexPath];
-        TZPhotoPreviewCell *photoPreviewCell = (TZPhotoPreviewCell *)cell;
-        photoPreviewCell.cropRect = _tzImagePickerVc.cropRect;
-        photoPreviewCell.allowCrop = _tzImagePickerVc.allowCrop;
-        __weak typeof(_tzImagePickerVc) weakTzImagePickerVc = _tzImagePickerVc;
-        __weak typeof(_collectionView) weakCollectionView = _collectionView;
-        __weak typeof(photoPreviewCell) weakCell = photoPreviewCell;
-        [photoPreviewCell setImageProgressUpdateBlock:^(double progress) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            __strong typeof(weakTzImagePickerVc) strongTzImagePickerVc = weakTzImagePickerVc;
-            __strong typeof(weakCollectionView) strongCollectionView = weakCollectionView;
-            __strong typeof(weakCell) strongCell = weakCell;
-            strongSelf.progress = progress;
-            if (progress >= 1) {
-                if (strongSelf.isSelectOriginalPhoto) [strongSelf showPhotoBytes];
-                if (strongSelf.alertView && [strongCollectionView.visibleCells containsObject:strongCell]) {
-                    [strongTzImagePickerVc hideAlertView:strongSelf.alertView];
-                    strongSelf.alertView = nil;
-                    [strongSelf doneButtonClick];
+    // modified by Novia
+    if (collectionView == _bottomCollection) {
+        TZAssetModel *model = _selectedModels[indexPath.item];
+        PreviewBottomCollectionCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"PreviewBottomCollectionCell" forIndexPath:indexPath];
+        [cell setModel:model currentIndex:self.currentIndex];
+        return cell;
+        
+    }else {
+        TZAssetModel *model = _models[indexPath.item];
+        
+        TZAssetPreviewCell *cell;
+        __weak typeof(self) weakSelf = self;
+        if (_tzImagePickerVc.allowPickingMultipleVideo && model.type == TZAssetModelMediaTypeVideo) {
+            cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZVideoPreviewCell" forIndexPath:indexPath];
+        } else if (_tzImagePickerVc.allowPickingMultipleVideo && model.type == TZAssetModelMediaTypePhotoGif && _tzImagePickerVc.allowPickingGif) {
+            cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZGifPreviewCell" forIndexPath:indexPath];
+        } else {
+            cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TZPhotoPreviewCell" forIndexPath:indexPath];
+            TZPhotoPreviewCell *photoPreviewCell = (TZPhotoPreviewCell *)cell;
+            photoPreviewCell.cropRect = _tzImagePickerVc.cropRect;
+            photoPreviewCell.allowCrop = _tzImagePickerVc.allowCrop;
+            __weak typeof(_tzImagePickerVc) weakTzImagePickerVc = _tzImagePickerVc;
+            __weak typeof(_collectionView) weakCollectionView = _collectionView;
+            __weak typeof(photoPreviewCell) weakCell = photoPreviewCell;
+            [photoPreviewCell setImageProgressUpdateBlock:^(double progress) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                __strong typeof(weakTzImagePickerVc) strongTzImagePickerVc = weakTzImagePickerVc;
+                __strong typeof(weakCollectionView) strongCollectionView = weakCollectionView;
+                __strong typeof(weakCell) strongCell = weakCell;
+                strongSelf.progress = progress;
+                if (progress >= 1) {
+                    if (strongSelf.isSelectOriginalPhoto) [strongSelf showPhotoBytes];
+                    if (strongSelf.alertView && [strongCollectionView.visibleCells containsObject:strongCell]) {
+                        [strongTzImagePickerVc hideAlertView:strongSelf.alertView];
+                        strongSelf.alertView = nil;
+                        [strongSelf doneButtonClick];
+                    }
                 }
-            }
+            }];
+        }
+        
+        cell.model = model;
+        [cell setSingleTapGestureBlock:^{
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            [strongSelf didTapPreviewCell];
         }];
+        return cell;
     }
-    
-    cell.model = model;
-    [cell setSingleTapGestureBlock:^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        [strongSelf didTapPreviewCell];
-    }];
-    return cell;
 }
 
 - (void)collectionView:(UICollectionView *)collectionView willDisplayCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath {
-    if ([cell isKindOfClass:[TZPhotoPreviewCell class]]) {
-        [(TZPhotoPreviewCell *)cell recoverSubviews];
+    if (collectionView == _collectionView) {
+        if ([cell isKindOfClass:[TZPhotoPreviewCell class]]) {
+            [(TZPhotoPreviewCell *)cell recoverSubviews];
+        }
     }
 }
 
 - (void)collectionView:(UICollectionView *)collectionView didEndDisplayingCell:(UICollectionViewCell *)cell forItemAtIndexPath:(NSIndexPath *)indexPath {
-    if ([cell isKindOfClass:[TZPhotoPreviewCell class]]) {
-        [(TZPhotoPreviewCell *)cell recoverSubviews];
-    } else if ([cell isKindOfClass:[TZVideoPreviewCell class]]) {
-        TZVideoPreviewCell *videoCell = (TZVideoPreviewCell *)cell;
-        if (videoCell.player && videoCell.player.rate != 0.0) {
-            [videoCell pausePlayerAndShowNaviBar];
+    if (collectionView == _collectionView) {
+        if ([cell isKindOfClass:[TZPhotoPreviewCell class]]) {
+            [(TZPhotoPreviewCell *)cell recoverSubviews];
+        } else if ([cell isKindOfClass:[TZVideoPreviewCell class]]) {
+            [(TZVideoPreviewCell *)cell pausePlayerAndShowNaviBar];
         }
+    }
+}
+
+// modified by Novia 点击底部跳转
+- (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    if (collectionView == _bottomCollection) {
+        TZAssetModel *model = _selectedModels[indexPath.item];
+        self.currentIndex = model.index;
+        if (_currentIndex) {
+            [_collectionView setContentOffset:CGPointMake((self.view.tz_width + 20) * self.currentIndex, 0) animated:NO];
+        }
+        [self refreshNaviBarAndBottomBarState];
+        [_bottomCollection reloadData];
     }
 }
 

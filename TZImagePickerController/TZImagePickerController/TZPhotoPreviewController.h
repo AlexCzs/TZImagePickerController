@@ -16,6 +16,12 @@
 @property (nonatomic, assign) BOOL isSelectOriginalPhoto;       ///< If YES,return original photo / 是否返回原图
 @property (nonatomic, assign) BOOL isCropImage;
 
+// modified by Novia
+@property (nonatomic, strong) NSMutableArray *selectedModels;
+// 是否是从相册点击预览的
+@property (nonatomic, assign) BOOL isNeedHiddend;
+// end
+
 /// Return the new selected photos / 返回最新的选中图片数组
 @property (nonatomic, copy) void (^backButtonClickBlock)(BOOL isSelectOriginalPhoto);
 @property (nonatomic, copy) void (^doneButtonClickBlock)(BOOL isSelectOriginalPhoto);

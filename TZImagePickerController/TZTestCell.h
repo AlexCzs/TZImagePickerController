@@ -17,6 +17,8 @@
 @property (nonatomic, assign) NSInteger row;
 @property (nonatomic, strong) id asset;
 
+@property (nonatomic, strong) id isVideo;
+
 - (UIView *)snapshotView;
 
 @end

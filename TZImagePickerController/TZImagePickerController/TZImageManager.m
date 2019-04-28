@@ -609,8 +609,8 @@ static dispatch_once_t onceToken;
             session.outputFileType = [supportedTypeArray objectAtIndex:0];
         }
         
-        if (![[NSFileManager defaultManager] fileExistsAtPath:[NSHomeDirectory() stringByAppendingFormat:@"/tmp"]]) {
-            [[NSFileManager defaultManager] createDirectoryAtPath:[NSHomeDirectory() stringByAppendingFormat:@"/tmp"] withIntermediateDirectories:YES attributes:nil error:nil];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:[NSHomeDirectory() stringByAppendingFormat:@"/Library/caches"]]) {
+            [[NSFileManager defaultManager] createDirectoryAtPath:[NSHomeDirectory() stringByAppendingFormat:@"/Library/caches"] withIntermediateDirectories:YES attributes:nil error:nil];
         }
         
         if ([TZImagePickerConfig sharedInstance].needFixComposition) {

@@ -113,6 +113,10 @@
 /// 默认为YES，如果设置为NO, 选择器将不会自己dismiss
 @property(nonatomic, assign) BOOL autoDismiss;
 
+/// Default is NO, if set YES, to setup seyway-ninebot5.0 fans upload.
+/// 默认为NO，如果设置为YES, 适配5.0，发动态相册样式
+@property(nonatomic, assign) BOOL isUploadDynamic;
+
 /// Default is NO, if set YES, in the delegate method the photos and infos will be nil, only assets hava value.
 /// 默认为NO，如果设置为YES，代理方法里photos和infos会是nil，只返回assets
 @property (assign, nonatomic) BOOL onlyReturnAsset;
@@ -166,6 +170,8 @@
 @property (nonatomic, assign) NSInteger circleCropRadius;  ///< 圆形裁剪框半径大小
 @property (nonatomic, copy) void (^cropViewSettingBlock)(UIView *cropView);     ///< 自定义裁剪框的其他属性
 @property (nonatomic, copy) void (^navLeftBarButtonSettingBlock)(UIButton *leftButton);     ///< 自定义返回按钮样式及其属性
+
+@property (nonatomic, copy) void (^previewHiddendSettingBlock)(BOOL isHidden);
 
 /// 【自定义各页面/组件的样式】在界面初始化/组件setModel完成后调用，允许外界修改样式等
 @property (nonatomic, copy) void (^photoPickerPageUIConfigBlock)(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine);
@@ -236,6 +242,10 @@
 
 // For method annotations, see the corresponding method in TZImagePickerControllerDelegate / 方法注释见TZImagePickerControllerDelegate中对应方法
 @property (nonatomic, copy) void (^didFinishPickingPhotosHandle)(NSArray<UIImage *> *photos,NSArray *assets,BOOL isSelectOriginalPhoto);
+
+// modified by novia // 预览下一步回调时间
+@property (nonatomic, copy) void (^preDidFinishPickingPhotosHandle)(NSArray<UIImage *> *photos,NSArray *assets,BOOL isSelectOriginalPhoto);
+
 @property (nonatomic, copy) void (^didFinishPickingPhotosWithInfosHandle)(NSArray<UIImage *> *photos,NSArray *assets,BOOL isSelectOriginalPhoto,NSArray<NSDictionary *> *infos);
 @property (nonatomic, copy) void (^imagePickerControllerDidCancelHandle)(void);
 @property (nonatomic, copy) void (^didFinishPickingVideoHandle)(UIImage *coverImage,PHAsset *asset);
@@ -287,6 +297,9 @@
 @interface TZAlbumPickerController : UIViewController
 @property (nonatomic, assign) NSInteger columnNumber;
 @property (assign, nonatomic) BOOL isFirstAppear;
+/**************** modified by Novia ****************/
+@property (nonatomic, strong) NSMutableArray *albumArr;
+/**************** end *****************************/
 - (void)configTableView;
 @end
 

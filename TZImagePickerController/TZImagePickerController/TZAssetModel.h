@@ -25,6 +25,8 @@ typedef enum : NSUInteger {
 @property (nonatomic, assign) TZAssetModelMediaType type;
 @property (nonatomic, copy) NSString *timeLength;
 
+@property (nonatomic, assign) NSInteger index;
+
 /// Init a photo dataModel With a PHAsset
 /// 用一个PHAsset实例，初始化一个照片模型
 + (instancetype)modelWithAsset:(PHAsset *)asset type:(TZAssetModelMediaType)type;

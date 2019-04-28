@@ -13,4 +13,7 @@
 
 @property (nonatomic, strong) TZAssetModel *model;
 
+// 是否是从相册点击预览的
+@property (nonatomic, assign) BOOL isNeedHiddend;
+
 @end

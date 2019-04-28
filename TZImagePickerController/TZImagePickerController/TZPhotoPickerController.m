@@ -19,6 +19,8 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import "TZImageRequestOperation.h"
 
+
+
 @interface TZPhotoPickerController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIImagePickerControllerDelegate,UINavigationControllerDelegate,UIAlertViewDelegate> {
     NSMutableArray *_models;
     
@@ -44,6 +46,9 @@
 @property (nonatomic, strong) UIImagePickerController *imagePickerVc;
 @property (strong, nonatomic) CLLocation *location;
 @property (nonatomic, strong) NSOperationQueue *operationQueue;
+
+// modified by Novia
+@property (nonatomic, assign) BOOL isPreDoneClick;
 @end
 
 static CGSize AssetGridThumbnailSize;
@@ -204,6 +209,11 @@ static CGFloat itemMargin = 5;
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     // [self updateCachedAssets];
+    // 右滑返回会界面会出现卡死的bug, 暂时禁用右滑手势
+    
+    if ([self.navigationController respondsToSelector:@selector(interactivePopGestureRecognizer)]) {
+        self.navigationController.interactivePopGestureRecognizer.enabled = NO;
+    }
 }
 
 - (void)configBottomToolBar {
@@ -312,6 +322,15 @@ static CGFloat itemMargin = 5;
     _layout.itemSize = CGSizeMake(itemWH, itemWH);
     _layout.minimumInteritemSpacing = itemMargin;
     _layout.minimumLineSpacing = itemMargin;
+    
+    if (tzImagePickerVc.isUploadDynamic) {
+        if ([TZCommonTools tz_isIPhoneX]) {
+            _layout.sectionInset = UIEdgeInsetsMake(88,0,50+34,0);
+        } else {// 50:底部 相册 拍照/视频view
+            _layout.sectionInset = UIEdgeInsetsMake(64,0,50,0);
+        }
+    }
+    
     [_collectionView setCollectionViewLayout:_layout];
     if (_offsetItemCount > 0) {
         CGFloat offsetY = _offsetItemCount * (_layout.itemSize.height + _layout.minimumLineSpacing);
@@ -381,9 +400,13 @@ static CGFloat itemMargin = 5;
     TZImagePickerController *tzImagePickerVc = (TZImagePickerController *)self.navigationController;
     // 1.6.8 判断是否满足最小必选张数的限制
     if (tzImagePickerVc.minImagesCount && tzImagePickerVc.selectedModels.count < tzImagePickerVc.minImagesCount) {
-        NSString *title = [NSString stringWithFormat:[NSBundle tz_localizedStringForKey:@"Select a minimum of %zd photos"], tzImagePickerVc.minImagesCount];
+        NSString *title = [NSString stringWithFormat:[NSBundle tz_localizedStringForKey:@"照片数量已达上限"], tzImagePickerVc.minImagesCount];
         [tzImagePickerVc showAlertWithTitle:title];
         return;
+    }
+    
+    if (!tzImagePickerVc.isUploadDynamic) {
+        [tzImagePickerVc showProgressHUD];
     }
     
     [tzImagePickerVc showProgressHUD];
@@ -475,6 +498,18 @@ static CGFloat itemMargin = 5;
     if ([tzImagePickerVc.pickerDelegate respondsToSelector:@selector(imagePickerController:didFinishPickingPhotos:sourceAssets:isSelectOriginalPhoto:infos:)]) {
         [tzImagePickerVc.pickerDelegate imagePickerController:tzImagePickerVc didFinishPickingPhotos:photos sourceAssets:assets isSelectOriginalPhoto:_isSelectOriginalPhoto infos:infoArr];
     }
+    
+    if (_isPreDoneClick) {// 是预览
+        if (tzImagePickerVc.preDidFinishPickingPhotosHandle) {
+            tzImagePickerVc.preDidFinishPickingPhotosHandle(photos,assets,_isSelectOriginalPhoto);
+        }
+        
+    }else {// 相册直接点击
+        if (tzImagePickerVc.didFinishPickingPhotosHandle) {
+            tzImagePickerVc.didFinishPickingPhotosHandle(photos,assets,_isSelectOriginalPhoto);
+        }
+    }
+    
     if (tzImagePickerVc.didFinishPickingPhotosHandle) {
         tzImagePickerVc.didFinishPickingPhotosHandle(photos,assets,_isSelectOriginalPhoto);
     }
@@ -517,8 +552,10 @@ static CGFloat itemMargin = 5;
     TZAssetModel *model;
     if (tzImagePickerVc.sortAscendingByModificationDate || !_showTakePhotoBtn) {
         model = _models[indexPath.item];
+        model.index = indexPath.item;
     } else {
         model = _models[indexPath.item - 1];
+        model.index = indexPath.item - 1;
     }
     cell.allowPickingGif = tzImagePickerVc.allowPickingGif;
     cell.model = model;
@@ -547,6 +584,8 @@ static CGFloat itemMargin = 5;
         if (isSelected) {
             strongCell.selectPhotoButton.selected = NO;
             model.isSelected = NO;
+            // 修改选择完视频后只能选择一张图片的bug
+            tzImagePickerVc.maxImagesCount = 9;
             NSArray *selectedModels = [NSArray arrayWithArray:tzImagePickerVc.selectedModels];
             for (TZAssetModel *model_item in selectedModels) {
                 if ([model.asset.localIdentifier isEqualToString:model_item.asset.localIdentifier]) {
@@ -559,12 +598,39 @@ static CGFloat itemMargin = 5;
                 [[NSNotificationCenter defaultCenter] postNotificationName:@"TZ_PHOTO_PICKER_RELOAD_NOTIFICATION" object:strongSelf.navigationController];
             }
             [UIView showOscillatoryAnimationWithLayer:strongLayer type:TZOscillatoryAnimationToSmaller];
+            //适配圈子首页没有完成的情况
+            if (!tzImagePickerVc.autoDismiss) {
+                self->_isPreDoneClick = NO;
+                [self doneButtonClick];
+            }
         } else {
+            NSInteger maxNumber = tzImagePickerVc.maxImagesCount;
+            /*** modified by Novia ****/
+            if (model.type == TZAssetModelMediaTypeVideo) {
+                if (tzImagePickerVc.selectedModels.count > 0) {
+                    [tzImagePickerVc showAlertWithTitle:[NSBundle tz_localizedStringForKey:@"Can not choose both video and photo"]];
+                    return ;
+                }else {
+                    tzImagePickerVc.maxImagesCount = 1;
+                }
+            }else {
+                if (tzImagePickerVc.selectedModels.count == 1) {
+                    if ([tzImagePickerVc.selectedModels[0] type] == TZAssetModelMediaTypeVideo) {
+                        [tzImagePickerVc showAlertWithTitle:[NSBundle tz_localizedStringForKey:@"Can not choose both video and photo"]];
+                    }else {
+                        tzImagePickerVc.maxImagesCount = maxNumber;
+                    }
+                }else {
+                    tzImagePickerVc.maxImagesCount = maxNumber;
+                }
+            }
+            /*** end ****/
             // 2. select:check if over the maxImagesCount / 选择照片,检查是否超过了最大个数的限制
             if (tzImagePickerVc.selectedModels.count < tzImagePickerVc.maxImagesCount) {
                 if (tzImagePickerVc.maxImagesCount == 1 && !tzImagePickerVc.allowPreview) {
                     model.isSelected = YES;
                     [tzImagePickerVc addSelectedModel:model];
+                    self->_isPreDoneClick = NO;
                     [strongSelf doneButtonClick];
                     return;
                 }
@@ -577,9 +643,15 @@ static CGFloat itemMargin = 5;
                 [strongSelf refreshBottomToolBarStatus];
                 [UIView showOscillatoryAnimationWithLayer:strongLayer type:TZOscillatoryAnimationToSmaller];
             } else {
-                NSString *title = [NSString stringWithFormat:[NSBundle tz_localizedStringForKey:@"Select a maximum of %zd photos"], tzImagePickerVc.maxImagesCount];
+                NSString *title = [NSString stringWithFormat:[NSBundle tz_localizedStringForKey:@"照片数量已达上限"], tzImagePickerVc.maxImagesCount];
                 [tzImagePickerVc showAlertWithTitle:title];
             }
+            /******** modified by Novia  *********/ //适配圈子首页没有完成的情况
+            if (!tzImagePickerVc.autoDismiss) {
+                self->_isPreDoneClick = NO;
+                [self doneButtonClick];
+            }
+            /******* end ************/
         }
     };
     return cell;
@@ -604,6 +676,13 @@ static CGFloat itemMargin = 5;
         } else {
             TZVideoPlayerController *videoPlayerVc = [[TZVideoPlayerController alloc] init];
             videoPlayerVc.model = model;
+            /********** modified by Novia ************/
+            // 点击预览，隐藏uploadCenterVC的nav和bottom
+            videoPlayerVc.isNeedHiddend = YES;
+            if (tzImagePickerVc.previewHiddendSettingBlock) {
+                tzImagePickerVc.previewHiddendSettingBlock(YES);
+            }
+            /****************** end ******************/
             [self.navigationController pushViewController:videoPlayerVc animated:YES];
         }
     } else if (model.type == TZAssetModelMediaTypePhotoGif && tzImagePickerVc.allowPickingGif && !tzImagePickerVc.allowPickingMultipleVideo) {
@@ -613,12 +692,28 @@ static CGFloat itemMargin = 5;
         } else {
             TZGifPhotoPreviewController *gifPreviewVc = [[TZGifPhotoPreviewController alloc] init];
             gifPreviewVc.model = model;
+            /********** modified by Novia ************/
+            // 点击预览，隐藏uploadCenterVC的nav和bottom
+            gifPreviewVc.isNeedHiddend = YES;
+            if (tzImagePickerVc.previewHiddendSettingBlock) {
+                tzImagePickerVc.previewHiddendSettingBlock(YES);
+            }
+            /****************** end ******************/
             [self.navigationController pushViewController:gifPreviewVc animated:YES];
         }
     } else {
         TZPhotoPreviewController *photoPreviewVc = [[TZPhotoPreviewController alloc] init];
         photoPreviewVc.currentIndex = index;
         photoPreviewVc.models = _models;
+        
+        /********** modified by Novia ************/
+        // 点击预览，隐藏uploadCenterVC的nav和bottom
+        photoPreviewVc.isNeedHiddend = YES;
+        if (tzImagePickerVc.previewHiddendSettingBlock) {
+            tzImagePickerVc.previewHiddendSettingBlock(YES);
+        }
+        /****************** end ******************/
+        
         [self pushPhotoPrevireViewController:photoPreviewVc];
     }
 }
@@ -733,6 +828,7 @@ static CGFloat itemMargin = 5;
     [photoPreviewVc setDoneButtonClickBlock:^(BOOL isSelectOriginalPhoto) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         strongSelf.isSelectOriginalPhoto = isSelectOriginalPhoto;
+        strongSelf.isPreDoneClick = YES;
         [strongSelf doneButtonClick];
     }];
     [photoPreviewVc setDoneButtonClickBlockCropMode:^(UIImage *cropedImage, id asset) {

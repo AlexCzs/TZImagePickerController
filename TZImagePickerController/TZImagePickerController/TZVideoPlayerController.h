@@ -13,4 +13,11 @@
 
 @property (nonatomic, strong) TZAssetModel *model;
 
+
+// modified by Novia
+@property (nonatomic, strong) NSURL *playUrl;
+// 是否是从相册点击预览的
+@property (nonatomic, assign) BOOL isNeedHiddend;
+// end
+
 @end

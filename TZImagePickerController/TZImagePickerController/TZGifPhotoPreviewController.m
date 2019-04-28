@@ -49,6 +49,12 @@
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     [UIApplication sharedApplication].statusBarStyle = _originStatusBarStyle;
+    TZImagePickerController *tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+    if (_isNeedHiddend) {
+        if (tzImagePickerVc.previewHiddendSettingBlock) {
+            tzImagePickerVc.previewHiddendSettingBlock(NO);
+        }
+    }
 }
 
 - (void)configPreviewView {

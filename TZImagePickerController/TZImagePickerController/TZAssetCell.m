@@ -104,8 +104,8 @@
         _selectPhotoButton.hidden = NO;
         _bottomView.hidden = YES;
     } else { // Video of Gif
-        _selectImageView.hidden = YES;
-        _selectPhotoButton.hidden = YES;
+        _selectImageView.hidden = NO;
+        _selectPhotoButton.hidden = NO;
     }
     
     if (type == TZAssetCellTypeVideo) {
@@ -113,7 +113,7 @@
         self.timeLength.text = _model.timeLength;
         self.videoImgView.hidden = NO;
         _timeLength.tz_left = self.videoImgView.tz_right;
-        _timeLength.textAlignment = NSTextAlignmentRight;
+        _timeLength.textAlignment = NSTextAlignmentCenter;
     } else if (type == TZAssetCellTypePhotoGif && self.allowPickingGif) {
         self.bottomView.hidden = NO;
         self.timeLength.text = @"GIF";
@@ -280,9 +280,11 @@
 - (UILabel *)timeLength {
     if (_timeLength == nil) {
         UILabel *timeLength = [[UILabel alloc] init];
-        timeLength.font = [UIFont boldSystemFontOfSize:11];
+        timeLength.textAlignment = NSTextAlignmentCenter;
+        timeLength.font = [UIFont boldSystemFontOfSize:9];
+        timeLength.layer.masksToBounds = YES;
+        timeLength.layer.cornerRadius = 6.5;
         timeLength.textColor = [UIColor whiteColor];
-        timeLength.textAlignment = NSTextAlignmentRight;
         [self.bottomView addSubview:timeLength];
         _timeLength = timeLength;
     }
@@ -327,6 +329,9 @@
     _indexLabel.frame = _selectImageView.frame;
     _imageView.frame = CGRectMake(0, 0, self.tz_width, self.tz_height);
     
+    _imageView.layer.masksToBounds = YES;
+    _imageView.layer.cornerRadius = 8;
+    
     static CGFloat progressWH = 20;
     CGFloat progressXY = (self.tz_width - progressWH) / 2;
     _progressView.frame = CGRectMake(progressXY, progressXY, progressWH, progressWH);
@@ -358,6 +363,7 @@
 @interface TZAlbumCell ()
 @property (weak, nonatomic) UIImageView *posterImageView;
 @property (weak, nonatomic) UILabel *titleLabel;
+@property (weak, nonatomic) UILabel *subLabel;
 @end
 
 @implementation TZAlbumCell
@@ -371,10 +377,12 @@
 - (void)setModel:(TZAlbumModel *)model {
     _model = model;
     
-    NSMutableAttributedString *nameString = [[NSMutableAttributedString alloc] initWithString:model.name attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:16],NSForegroundColorAttributeName:[UIColor blackColor]}];
-    NSAttributedString *countString = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"  (%zd)",model.count] attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:16],NSForegroundColorAttributeName:[UIColor lightGrayColor]}];
-    [nameString appendAttributedString:countString];
-    self.titleLabel.attributedText = nameString;
+//    NSMutableAttributedString *nameString = [[NSMutableAttributedString alloc] initWithString:model.name attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:16],NSForegroundColorAttributeName:[UIColor blackColor]}];
+//    NSAttributedString *countString = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"  (%zd)",model.count] attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:16],NSForegroundColorAttributeName:[UIColor lightGrayColor]}];
+//    [nameString appendAttributedString:countString];
+//    self.titleLabel.attributedText = nameString;
+    self.titleLabel.text = model.name;
+    self.subLabel.text = [NSString stringWithFormat:@"%li", (long)model.count];
     [[TZImageManager manager] getPostImageWithAlbumModel:model completion:^(UIImage *postImage) {
         self.posterImageView.image = postImage;
     }];
@@ -394,8 +402,10 @@
     [super layoutSubviews];
     _selectedCountButton.frame = CGRectMake(self.contentView.tz_width - 24, 23, 24, 24);
     NSInteger titleHeight = ceil(self.titleLabel.font.lineHeight);
-    self.titleLabel.frame = CGRectMake(80, (self.tz_height - titleHeight) / 2, self.tz_width - 80 - 50, titleHeight);
-    self.posterImageView.frame = CGRectMake(0, 0, 70, 70);
+    
+    self.posterImageView.frame = CGRectMake(20, 10, 60, 60);
+    self.titleLabel.frame = CGRectMake(90, 15, self.tz_width-80-20-40, titleHeight);
+    self.subLabel.frame = CGRectMake(90, 80-17-15, self.tz_width-80-20-40, 17);
     
     if (self.albumCellDidLayoutSubviewsBlock) {
         self.albumCellDidLayoutSubviewsBlock(self, _posterImageView, _titleLabel);
@@ -413,6 +423,7 @@
         UIImageView *posterImageView = [[UIImageView alloc] init];
         posterImageView.contentMode = UIViewContentModeScaleAspectFill;
         posterImageView.clipsToBounds = YES;
+        posterImageView.layer.cornerRadius = 8;
         [self.contentView addSubview:posterImageView];
         _posterImageView = posterImageView;
     }
@@ -422,13 +433,25 @@
 - (UILabel *)titleLabel {
     if (_titleLabel == nil) {
         UILabel *titleLabel = [[UILabel alloc] init];
-        titleLabel.font = [UIFont boldSystemFontOfSize:17];
+        titleLabel.font = [UIFont systemFontOfSize:15];
         titleLabel.textColor = [UIColor blackColor];
         titleLabel.textAlignment = NSTextAlignmentLeft;
         [self.contentView addSubview:titleLabel];
         _titleLabel = titleLabel;
     }
     return _titleLabel;
+}
+
+- (UILabel *)subLabel {
+    if (_subLabel == nil) {
+        UILabel *subLabel = [[UILabel alloc] init];
+        subLabel.font = [UIFont systemFontOfSize:12];
+        subLabel.textColor = [[UIColor blackColor] colorWithAlphaComponent:0.5];
+        subLabel.textAlignment = NSTextAlignmentLeft;
+        [self.contentView addSubview:subLabel];
+        _subLabel = subLabel;
+    }
+    return _subLabel;
 }
 
 - (UIButton *)selectedCountButton {
@@ -467,6 +490,59 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     _imageView.frame = self.bounds;
+}
+
+@end
+
+@implementation PreviewBottomCollectionCell
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = UIColor.clearColor;
+        _imgView = [[UIImageView alloc] init];
+        _imgView.contentMode = UIViewContentModeScaleAspectFill;
+        _imgView.backgroundColor = UIColor.clearColor;
+        _imgView.layer.borderColor = [[UIColor whiteColor] colorWithAlphaComponent:0.3].CGColor;
+        _imgView.layer.borderWidth = 2;
+        _imgView.layer.cornerRadius = 2;
+        _imgView.layer.masksToBounds = YES;
+        [self.contentView addSubview:_imgView];
+        
+    }
+    return self;
+}
+
+- (void)setModel:(TZAssetModel *)model currentIndex:(NSInteger)currentIndex {
+    self.representedAssetIdentifier = model.asset.localIdentifier;
+    if (model.asset && self.imageRequestID) {
+        [[PHImageManager defaultManager] cancelImageRequest:self.imageRequestID];
+    }
+    
+    self.imageRequestID = [[TZImageManager manager] getPhotoWithAsset:model.asset completion:^(UIImage *photo, NSDictionary *info, BOOL isDegraded) {
+        self.imgView.image = photo;
+        
+        if (!isDegraded) {
+            self.imageRequestID = 0;
+        }
+    } progressHandler:^(double progress, NSError *error, BOOL *stop, NSDictionary *info) {
+        
+        if (progress >= 1) {
+            self.imageRequestID = 0;
+        }
+        
+    } networkAccessAllowed:YES];
+    
+    if (model.index == currentIndex) {
+        _imgView.layer.borderColor = [UIColor whiteColor].CGColor;
+    }else {
+        _imgView.layer.borderColor = [[UIColor whiteColor] colorWithAlphaComponent:0.4].CGColor;
+    }
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    _imgView.frame = CGRectMake(0, 0, 56, 56);
 }
 
 @end

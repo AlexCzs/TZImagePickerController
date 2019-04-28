@@ -19,19 +19,22 @@
         self.backgroundColor = [UIColor whiteColor];
         _imageView = [[UIImageView alloc] init];
         _imageView.backgroundColor = [UIColor colorWithWhite:1.000 alpha:0.500];
-        _imageView.contentMode = UIViewContentModeScaleAspectFit;
+        _imageView.contentMode = UIViewContentModeScaleAspectFill;
+        _imageView.clipsToBounds = YES;
+        _imageView.layer.cornerRadius = 8;
         [self addSubview:_imageView];
         self.clipsToBounds = YES;
         
         _videoImageView = [[UIImageView alloc] init];
-        _videoImageView.image = [UIImage tz_imageNamedFromMyBundle:@"MMVideoPreviewPlay"];
+//        _videoImageView.image = [UIImage tz_imageNamedFromMyBundle:@"MMVideoPreviewPlay"];
+        _videoImageView.image = [UIImage foWithName:@"play_video_icon@2x"]
         _videoImageView.contentMode = UIViewContentModeScaleAspectFill;
         _videoImageView.hidden = YES;
         [self addSubview:_videoImageView];
         
         _deleteBtn = [UIButton buttonWithType:UIButtonTypeCustom];
         [_deleteBtn setImage:[UIImage imageNamed:@"photo_delete"] forState:UIControlStateNormal];
-        _deleteBtn.imageEdgeInsets = UIEdgeInsetsMake(-10, 0, 0, -10);
+//        _deleteBtn.imageEdgeInsets = UIEdgeInsetsMake(-10, 0, 0, -10);
         _deleteBtn.alpha = 0.6;
         [self addSubview:_deleteBtn];
         
@@ -48,9 +51,10 @@
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    _imageView.frame = self.bounds;
+    _imageView.frame = CGRectMake(0, 8, self.bounds.size.width-8, self.bounds.size.width-8);
     _gifLable.frame = CGRectMake(self.tz_width - 25, self.tz_height - 14, 25, 14);
-    _deleteBtn.frame = CGRectMake(self.tz_width - 36, 0, 36, 36);
+    _gifLable.hidden = YES;
+    _deleteBtn.frame = CGRectMake(self.tz_width - 19, 2, 16, 16);
     CGFloat width = self.tz_width / 3.0;
     _videoImageView.frame = CGRectMake(width, width, width, width);
 }
@@ -59,6 +63,10 @@
     _asset = asset;
     _videoImageView.hidden = asset.mediaType != PHAssetMediaTypeVideo;
     _gifLable.hidden = ![[asset valueForKey:@"filename"] containsString:@"GIF"];
+}
+
+- (void)setIsVideo:(id)isVideo {
+    _videoImageView.hidden = !self.isVideo;
 }
 
 - (void)setRow:(NSInteger)row {

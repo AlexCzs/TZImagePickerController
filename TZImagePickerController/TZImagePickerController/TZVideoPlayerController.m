@@ -42,7 +42,18 @@
     if (tzImagePickerVc) {
         self.navigationItem.title = tzImagePickerVc.previewBtnTitleStr;
     }
-    [self configMoviePlayer];
+    
+    /****** modified by Novia ***********/
+    //[self configMoviePlayer];
+    if (_playUrl) {// modified by Novia
+        _player = [AVPlayer playerWithURL:self.playUrl];
+        [self initAVPlayer];
+    }
+    else{
+        [self configMoviePlayer];
+    }
+    /****** end ************/
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pausePlayerAndShowNaviBar) name:UIApplicationWillResignActiveNotification object:nil];
 }
 
@@ -55,6 +66,16 @@
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     [UIApplication sharedApplication].statusBarStyle = _originStatusBarStyle;
+    
+    /********** modified by Novia ************/
+    // 退出预览，隐藏uploadCenterVC的nav和bottom
+    TZImagePickerController *tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+    if (_isNeedHiddend) {
+        if (tzImagePickerVc.previewHiddendSettingBlock) {
+            tzImagePickerVc.previewHiddendSettingBlock(NO);
+        }
+    }
+    /****************** end ******************/
 }
 
 - (void)configMoviePlayer {
@@ -77,6 +98,23 @@
         });
     }];
 }
+
+/************** modified by Novia *****************/
+- (void)initAVPlayer {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self->_player = [AVPlayer playerWithURL:self.playUrl];;
+        self->_playerLayer = [AVPlayerLayer playerLayerWithPlayer:self->_player];
+        self->_playerLayer.frame = self.view.bounds;
+        [self.view.layer addSublayer:self->_playerLayer];
+        [self addProgressObserver];
+        [self configPlayButton];
+        [self configBottomToolBar];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pausePlayerAndShowNaviBar) name:AVPlayerItemDidPlayToEndTimeNotification object:self->_player.currentItem];
+    });
+}
+
+/*************** end ******************/
+
 
 /// Show progress，do it next time / 给播放器添加进度更新,下次加上
 - (void)addProgressObserver{
@@ -107,7 +145,11 @@
     _doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _doneButton.titleLabel.font = [UIFont systemFontOfSize:16];
     if (!_cover) {
-        _doneButton.enabled = NO;
+        if (self.playUrl.absoluteString.length > 0) {
+            _doneButton.enabled = YES;
+        }else {
+            _doneButton.enabled = NO;
+        }
     }
     [_doneButton addTarget:self action:@selector(doneButtonClick) forControlEvents:UIControlEventTouchUpInside];
     TZImagePickerController *tzImagePickerVc = (TZImagePickerController *)self.navigationController;

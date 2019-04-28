@@ -458,7 +458,9 @@
 
 - (void)setMaxImagesCount:(NSInteger)maxImagesCount {
     _maxImagesCount = maxImagesCount;
-    if (maxImagesCount > 1) {
+    // TODO 修复bug, 发布动态，添加9张图片后，删除1张，再添加不能添加
+    // 但如此修改可能会引起添加单张图片的bug
+    if (maxImagesCount >= 1) {
         _showSelectBtn = YES;
         _allowCrop = NO;
     }
@@ -467,7 +469,9 @@
 - (void)setShowSelectBtn:(BOOL)showSelectBtn {
     _showSelectBtn = showSelectBtn;
     // 多选模式下，不允许让showSelectBtn为NO
-    if (!showSelectBtn && _maxImagesCount > 1) {
+    // TODO 修复bug, 发布动态，添加9张图片后，删除1张，再添加不能添加
+    // 但如此修改可能会引起添加单张图片的bug
+    if (!showSelectBtn && _maxImagesCount >= 1) {
         _showSelectBtn = YES;
     }
 }
@@ -686,7 +690,7 @@
 @interface TZAlbumPickerController ()<UITableViewDataSource,UITableViewDelegate> {
     UITableView *_tableView;
 }
-@property (nonatomic, strong) NSMutableArray *albumArr;
+//@property (nonatomic, strong) NSMutableArray *albumArr;
 @end
 
 @implementation TZAlbumPickerController
@@ -744,7 +748,8 @@
                 
                 if (!self->_tableView) {
                     self->_tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
-                    self->_tableView.rowHeight = 70;
+                    self->_tableView.rowHeight = 80;
+                    self->_tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
                     self->_tableView.tableFooterView = [[UIView alloc] init];
                     self->_tableView.dataSource = self;
                     self->_tableView.delegate = self;

@@ -54,3 +54,18 @@ typedef enum : NSUInteger {
 @interface TZAssetCameraCell : UICollectionViewCell
 @property (nonatomic, strong) UIImageView *imageView;
 @end
+
+
+//// modified by Novia
+@interface PreviewBottomCollectionCell: UICollectionViewCell
+
+@property (nonatomic, strong) UIImageView *imgView;
+@property (nonatomic, copy) NSString *representedAssetIdentifier;
+@property (nonatomic, assign) int32_t imageRequestID;
+@property (nonatomic, strong) TZAssetModel *model;
+@property (nonatomic, assign) int32_t bigImageRequestID;
+
+- (void)setModel:(TZAssetModel *)model currentIndex:(NSInteger)currentIndex;
+
+
+@end
