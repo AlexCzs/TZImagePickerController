@@ -409,7 +409,7 @@ static CGFloat itemMargin = 5;
         [tzImagePickerVc showProgressHUD];
     }
     
-    [tzImagePickerVc showProgressHUD];
+    //[tzImagePickerVc showProgressHUD];
     NSMutableArray *assets = [NSMutableArray array];
     NSMutableArray *photos;
     NSMutableArray *infoArr;
