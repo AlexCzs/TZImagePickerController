@@ -14,6 +14,7 @@
 
 + (NSString *)tz_localizedStringForKey:(NSString *)key value:(NSString *)value;
 + (NSString *)tz_localizedStringForKey:(NSString *)key;
-
++ (NSBundle *)currentWithModuleName:(NSString *)moduleName;
++ (NSBundle *)currentLangWithModuleName:(NSString *)moduleName;
 @end
 

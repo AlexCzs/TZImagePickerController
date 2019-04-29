@@ -14,13 +14,7 @@
 #import "TZImageManager.h"
 #import "TZImageCropManager.h"
 #import "TZAssetCell.h"
-
-// modified by Novia
-#if __has_include("NBFoundation-Swift.h")
-#import "NBFoundation-Swift.h"
-#else
-#import <NBFoundation/NBFoundation-Swift.h>
-#endif
+#import "NSString+NBExtension.h"
 
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
