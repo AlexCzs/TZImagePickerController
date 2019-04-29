@@ -14,7 +14,7 @@
 #import "TZImageManager.h"
 #import "TZImageCropManager.h"
 #import "TZAssetCell.h"
-
+@import NBFoundation;
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
     UICollectionViewFlowLayout *_layout;

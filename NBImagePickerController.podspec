@@ -15,7 +15,7 @@ Pod::Spec.new do |spec|
   spec.author             = { "alex" => "zhaoshen.chen@ninebot.com" }
   
 
-  spec.source       = { :git =>  "http://git.ninebot.cn:8888/zhaoshen.chen/TZImagePickerController_Fork.git", :commit => "3401098683126bdd62d7961691aaaebba754986d"}
+  spec.source       = { :git =>  "http://git.ninebot.cn:8888/zhaoshen.chen/TZImagePickerController_Fork.git"}
 
   spec.source_files  = "TZImagePickerController/TZImagePickerController/*.{h,m}"
 
