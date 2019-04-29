@@ -15,6 +15,12 @@
 #import "TZImageCropManager.h"
 #import "TZAssetCell.h"
 
+// modified by Novia
+#if __has_include("NBFoundation-Swift.h")
+#import "NBFoundation-Swift.h"
+#else
+#import <NBFoundation/NBFoundation-Swift.h>
+#endif
 
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
@@ -262,7 +268,7 @@
         }else {
             [_doneButton setEnabled: YES];
         }
-//        [_doneButton setTitle:@"nb_next".fo forState:UIControlStateNormal];
+        [_doneButton setTitle:@"nb_next".fo forState:UIControlStateNormal];
         [_doneButton setTitleColor:UIColor.blackColor forState:UIControlStateNormal];
         _doneButton.backgroundColor = UIColor.whiteColor;
         _doneButton.titleLabel.font = [UIFont systemFontOfSize:12];
@@ -432,7 +438,9 @@
         // 1. select:check if over the maxImagesCount / 选择照片,检查是否超过了最大个数的限制
         NSString *title = @"照片数量已达上限";
         if (_tzImagePickerVc.selectedModels.count >= _tzImagePickerVc.maxImagesCount) {
-//            title = @"nb_fans_select_max_photo_tip".fo;
+            if ([NSString respondsToSelector:NSSelectorFromString(@"fo")]) {
+                title = @"nb_fans_select_max_photo_tip".fo;
+            }
             [_tzImagePickerVc showAlertWithTitle:title];
             return;
             // 2. if not over the maxImagesCount / 如果没有超过最大个数限制
