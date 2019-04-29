@@ -14,7 +14,6 @@
 #import "TZImageManager.h"
 #import "TZImageCropManager.h"
 #import "TZAssetCell.h"
-#import "NSString+NBExtension.h"
 
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
