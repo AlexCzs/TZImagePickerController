@@ -476,6 +476,10 @@
     }
 }
 
+- (void)setAvtarViewIsShowSelectBtn:(BOOL)avtarViewIsShowSelectBtn {
+    _showSelectBtn = avtarViewIsShowSelectBtn;
+}
+
 - (void)setAllowCrop:(BOOL)allowCrop {
     _allowCrop = _maxImagesCount > 1 ? NO : allowCrop;
     if (allowCrop) { // 允许裁剪的时候，不能选原图和GIF
